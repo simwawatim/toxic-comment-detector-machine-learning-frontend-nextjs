@@ -101,8 +101,6 @@ const SidebarComp = ({ isOpen, toggleSidebar }: SidebarProps) => {
         <div className="text-white text-2xl font-bold mb-6 hidden lg:block">
           TCC
         </div>
-
-        {/* USER PROFILE */}
         <div className="flex items-center gap-3 mb-6 p-3 bg-gray-800 rounded-lg">
           <img
             src="/default-profile.png"
@@ -115,7 +113,6 @@ const SidebarComp = ({ isOpen, toggleSidebar }: SidebarProps) => {
           </div>
         </div>
 
-        {/* USERS SEARCH */}
         <input
           type="text"
           placeholder="Search users..."
