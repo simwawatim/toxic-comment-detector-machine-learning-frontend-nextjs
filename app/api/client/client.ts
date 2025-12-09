@@ -1,6 +1,6 @@
 import axios from "axios";
-import BASE_API_URL from "../base/base";
-import { LoginResponse, LoginRequest, RegisterRequest, RegisterResponse } from "../types/types";
+import {BASE_API_URL} from "../base/base";
+import { LoginResponse, LoginRequest, RegisterRequest, RegisterResponse, ProfilePictureResponse, UserListResponse } from "../types/types";
 
 
 export const LoginClient = async (data: LoginRequest): Promise <LoginResponse> => {
@@ -25,6 +25,35 @@ export const RegisterClient = async (data: RegisterRequest): Promise <RegisterRe
                 "Content-Type": "application/json",
             }
         },
+    )
+    return response.data
+}
+
+
+export const LoggedInUserProfile = async (): Promise <ProfilePictureResponse> => {
+    const response = await axios.get(
+        `${BASE_API_URL}profile/me/`,
+        {
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoyMDgwNjU5ODczLCJpYXQiOjE3NjUyOTk4NzMsImp0aSI6IjU0ZGRmZGI0MzcxNjRjYzc5ZDA0ZDQ0MWM5MTc2YmU5IiwidXNlcl9pZCI6IjcifQ.mFHFeLlJf_D9Llp0jkuX5wBeyiZMv4dZzqd5yambNxc`
+            }
+        },
+    )
+
+    return response.data
+}
+
+export const UserListClient = async (): Promise< UserListResponse> => {
+    const response = await axios.get(
+         `${BASE_API_URL}users/`,
+        {
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoyMDgwNjU5ODczLCJpYXQiOjE3NjUyOTk4NzMsImp0aSI6IjU0ZGRmZGI0MzcxNjRjYzc5ZDA0ZDQ0MWM5MTc2YmU5IiwidXNlcl9pZCI6IjcifQ.mFHFeLlJf_D9Llp0jkuX5wBeyiZMv4dZzqd5yambNxc`
+            }
+        },
+
     )
     return response.data
 }

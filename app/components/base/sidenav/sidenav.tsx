@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+
+import { useEffect, useState, useRef } from "react";
+
 import Link from "next/link";
 import {
   FaTachometerAlt,
@@ -12,6 +14,9 @@ import {
   FaExchangeAlt,
   FaHardHat,
 } from "react-icons/fa";
+import { LoggedInUserProfile, UserListClient } from "@/app/api/client/client";
+import Swal from "sweetalert2";
+import { UserListResponse, UserListResponseData } from "@/app/api/types/types";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -19,23 +24,74 @@ interface SidebarProps {
 }
 
 const SidebarComp = ({ isOpen, toggleSidebar }: SidebarProps) => {
-  const profileName = "John Banda";
-  const username = "jbanda";
-
-  const allUsers = [
-    { id: 1, name: "Mary Zulu", username: "mzulu", avatar: "/default-profile.png" },
-    { id: 2, name: "Peter Mwape", username: "pmwape", avatar: "/default-profile.png" },
-    { id: 3, name: "Helen Chola", username: "hchola", avatar: "/default-profile.png" },
-    { id: 4, name: "David Phiri", username: "dphiri", avatar: "/default-profile.png" },
-  ];
+  const [userList, setUserList] = useState<UserListResponseData[]>([]);
 
   const [search, setSearch] = useState("");
-  const filteredUsers = allUsers.filter(
-    (u) =>
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.username.toLowerCase().includes(search.toLowerCase())
-  );
+  const [username, setUsername] = useState<string>("");
+  const [profileName, setProfileName] = useState<string>("")
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const usersPerPage = 5;
+
+  const filteredUsers = userList.filter(
+    (u) =>
+      u.username.toLowerCase().includes(search.toLowerCase()) ||
+      u.email.toLowerCase().includes(search.toLowerCase())
+  );
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+  useEffect(() => {
+      const fetchProfile = async () => {
+        try{
+          const profile = await LoggedInUserProfile();
+          const statusCode = profile.status_code
+          const email = profile.data.email
+          
+          setUsername(profile.data.username);
+          setProfileName(email)
+      
+
+          if (Number(statusCode) === 401) {
+              Swal.fire({
+                title: "Session Expired",
+                text: "Your login session has expired. Please login again.",
+                icon: "warning",
+                confirmButtonText: "Login",
+              }).then(() => {
+                localStorage.removeItem("access_token");
+                window.location.href = "/login";
+              });
+              return;
+          }
+          } catch (error) {
+            console.error("Error fetching profile:", error);
+        }
+        
+        
+      };
+
+      const fetchUsers = async () => {
+      try {
+        const response: UserListResponse = await UserListClient();
+        setUserList(
+          response.data.map((u) => ({
+            ...u,
+            profile_picture: u.profile_picture
+              ? `http://127.0.0.1:8000${u.profile_picture}`
+              : "/default-profile.png",
+          }))
+        );
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+      fetchProfile();
+      fetchUsers();
+    }, []);
   return (
     <>
       <nav
@@ -68,32 +124,52 @@ const SidebarComp = ({ isOpen, toggleSidebar }: SidebarProps) => {
           className="w-full px-3 py-2 mb-4 rounded bg-gray-800 text-white border border-gray-600 focus:outline-none"
         />
 
-        {/* USERS LIST */}
-        <ul className="space-y-2 mb-6">
-          {filteredUsers.map((user) => (
+        <ul className="space-y-2 mb-4">
+          {currentUsers.map((user) => (
             <li key={user.id}>
               <Link
                 href={`/home?user=${user.id}`}
                 className="flex items-center gap-3 px-4 py-2 rounded bg-gray-900 hover:bg-purple-600 text-white transition-all"
               >
                 <img
-                  src={user.avatar}
+                  src={user.profile_picture || "/default-profile.png"}
                   className="w-10 h-10 rounded-full border border-gray-600 object-cover"
                 />
                 <div>
-                  <p className="text-white text-[15px] font-semibold">
-                    {user.name}
+                  <p className="text-white text-[15px] font-semibold">{user.username}</p>
+                  <p className="text-gray-400 text-[13px] break-words">
+                    {user.email.length > 10 ? `${user.email.slice(0, 15)}...` : user.email}
                   </p>
-                  <p className="text-gray-400 text-[13px]">@{user.username}</p>
+
                 </div>
               </Link>
             </li>
           ))}
 
-          {filteredUsers.length === 0 && (
+          {currentUsers.length === 0 && (
             <p className="text-gray-400 text-sm px-2">No users found</p>
           )}
         </ul>
+
+        {/* PAGINATION */}
+        <div className="flex justify-center gap-2 mb-6">
+          {Array.from({ length: totalPages }, (_, i) => (
+            <button
+              key={i + 1}
+              onClick={() => paginate(i + 1)}
+              className={`px-3 py-1 rounded ${
+                currentPage === i + 1 ? "bg-purple-600 text-white" : "bg-gray-700 text-gray-300"
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </div>
+
+          {filteredUsers.length === 0 && (
+            <p className="text-gray-400 text-sm px-2">No users found</p>
+          )}
+  
 
         <button
           onClick={() => localStorage.removeItem("token")}
@@ -114,4 +190,4 @@ const SidebarComp = ({ isOpen, toggleSidebar }: SidebarProps) => {
   );
 };
 
-export default SidebarComp;
+export default SidebarComp

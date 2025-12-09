@@ -3,6 +3,9 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { FaBars, FaTimes } from "react-icons/fa";
+import { LoggedInUserProfile } from "@/app/api/client/client";
+import Swal from "sweetalert2";
+import {BASE_URL} from "@/app/api/base/base";
 
 interface HeaderProps {
   isOpen: boolean;
@@ -10,7 +13,7 @@ interface HeaderProps {
 }
 
 const HeaderComp = ({ isOpen, toggleSidebar }: HeaderProps) => {
-  const [profileImage] = useState("/default-profile.png"); // static
+  const [profileImage, setProfileImage] = useState("/default-profile.png");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -25,6 +28,36 @@ const HeaderComp = ({ isOpen, toggleSidebar }: HeaderProps) => {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try{
+        const profile = await LoggedInUserProfile();
+        const statusCode = profile.status_code
+        const userProfileUrl = profile.data.profile_picture
+        const fullProfilePictureUrl = BASE_URL + userProfileUrl
+        console.log(fullProfilePictureUrl)
+
+        setProfileImage(fullProfilePictureUrl|| "/default-profile.png");
+
+        if (Number(statusCode) === 401) {
+        Swal.fire({
+          title: "Session Expired",
+          text: "Your login session has expired. Please login again.",
+          icon: "warning",
+          confirmButtonText: "Login",
+        }).then(() => {
+          localStorage.removeItem("access_token");
+          window.location.href = "/login";
+        });
+        return;
+      }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    };
+    fetchProfile();
   }, []);
 
   return (
