@@ -2,9 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { RegisterClient } from "../../api/client/client";
+import { RegisterResponse } from "../../api/types/types";
+import Swal from "sweetalert2";
 
 const RegisterComp = () => {
   const [mounted, setMounted] = useState(false);
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -17,27 +21,73 @@ const RegisterComp = () => {
 
   if (!mounted) return null;
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     if (password !== confirmPassword) {
       setLoading(false);
-      alert("Passwords do not match!");
+      Swal.fire({
+        title: "Failed",
+        text: "Passwords do not match!",
+        icon: "error",
+        confirmButtonText: "Retry",
+      });
       return;
     }
 
-    // Simulate frontend registration
-    setTimeout(() => {
-      setLoading(false);
-      alert(`Registration successful for ${email}`);
+    try {
+      const first_name = "None";
+      const last_name = "None";
+
+      const data: RegisterResponse = await RegisterClient({
+        username,
+        email,
+        password,
+        first_name,
+        last_name,
+      });
+
+      // FIXED: Compare as NUMBER
+      if (Number(data.status_code) !== 201) {
+        Swal.fire({
+          title: "Registration Failed",
+          text: data.message,
+          icon: "error",
+          confirmButtonText: "Retry",
+        });
+        setLoading(false);
+        return;
+      }
+
+      Swal.fire({
+        title: "Registration Successful",
+        text: "Your account has been created!",
+        icon: "success",
+        confirmButtonText: "Continue",
+      });
+
       localStorage.setItem("user_email", email);
-      router.push("/home"); // Redirect to home/dashboard
-    }, 1000);
+      router.push("/");
+      return;
+
+    } catch (error: any) {
+      const errorMsg =
+        error.response?.data?.message || error.message;
+
+      Swal.fire({
+        title: "Registration Failed",
+        text: errorMsg,
+        icon: "error",
+        confirmButtonText: "Retry",
+      });
+    }
+
+    setLoading(false);
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-white from-purple-200 via-pink-200 to-yellow-200">
+    <div className="flex flex-col md:flex-row h-screen bg-white">
 
       {/* Image Section */}
       <div className="hidden md:flex md:w-8/12 h-screen relative">
@@ -65,9 +115,26 @@ const RegisterComp = () => {
           </p>
 
           <form onSubmit={handleRegisterSubmit} className="mt-8 space-y-6">
+            
+            {/* Username */}
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Username
+              </label>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                required
+                onChange={(e) => setUsername(e.target.value)}
+                className="mt-2 block w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+              />
+            </div>
+
+            {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
+                Email
               </label>
               <input
                 id="email"
@@ -79,6 +146,7 @@ const RegisterComp = () => {
               />
             </div>
 
+            {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
@@ -93,6 +161,7 @@ const RegisterComp = () => {
               />
             </div>
 
+            {/* Confirm Password */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
                 Confirm Password
@@ -107,10 +176,11 @@ const RegisterComp = () => {
               />
             </div>
 
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full justify-center items-center gap-2 rounded-xl bg-purple-600 px-4 py-3 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              className="flex w-full justify-center items-center gap-2 rounded-xl bg-purple-600 px-4 py-3 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-50 transition"
             >
               {loading ? (
                 <svg
@@ -128,9 +198,10 @@ const RegisterComp = () => {
             </button>
           </form>
 
-          <div className="mt-4 text-center text-xs text-gray-500 space-y-1">
+          <div className="mt-4 text-center text-xs text-gray-500">
             <p>
-              Already have an account? <a href="/" className="text-purple-600 hover:underline">Sign in</a>
+              Already have an account?{" "}
+              <a href="/" className="text-purple-600 hover:underline">Sign in</a>
             </p>
           </div>
 

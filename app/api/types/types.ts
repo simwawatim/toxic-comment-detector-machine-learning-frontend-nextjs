@@ -16,3 +16,22 @@ export interface LoginResponse {
     message: string;
     data: LoginResponseData;
 }
+
+export interface RegisterResponseData {
+    username: string;
+    email: string
+}
+export interface RegisterResponse{
+    status_code: string;
+    status: string;
+    message: string;
+    data: RegisterResponseData;
+
+}
+export interface RegisterRequest {
+    username: string;
+    email: string;
+    password: string;
+    first_name: string;
+    last_name: string;
+}
