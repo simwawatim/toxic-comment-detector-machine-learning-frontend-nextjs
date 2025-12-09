@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { LoginClient } from "../../api/client/client";
+import { LoginResponse } from "../../api/types/types";
+import Swal from "sweetalert2";
 
 const LoginComp = () => {
   const [mounted, setMounted] = useState(false);
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -19,17 +22,30 @@ const LoginComp = () => {
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    try{
+      const data: LoginResponse = await LoginClient( {username: username, password})
+      localStorage.setItem("accessToken", data.data.access);
+      router.push("/home");
 
-    // Simulate frontend login
-    setTimeout(() => {
+    }
+    catch (error: any) {
+      const errorMsg =
+        error.response?.data?.message ||
+        error.message;                   
+
+      console.error(error.response?.data || error.message);
+
+      Swal.fire({
+        title: "Login Failed",
+        text: errorMsg,
+        icon: "error",
+        confirmButtonText: "Retry",
+      });
+    }
+
+    finally {
       setLoading(false);
-      if (email === "admin@toxicdetector.com" && password === "password123") {
-        localStorage.setItem("user_email", email);
-        router.push("/home");
-      } else {
-        alert("Invalid credentials. Try: admin@toxicdetector.com / password123");
-      }
-    }, 1000);
+    }
   };
 
   return (
@@ -62,15 +78,15 @@ const LoginComp = () => {
 
           <form onSubmit={handleLoginSubmit} className="mt-8 space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
+              <label htmlFor="text" className="block text-sm font-medium text-gray-700">
+                Username
               </label>
               <input
-                id="email"
-                type="email"
-                value={email}
+                id="username"
+                type="username"
+                value={username}
                 required
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => setUsername(e.target.value)}
                 className="mt-2 block w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition"
               />
             </div>
