@@ -33,7 +33,7 @@ const LoginComp = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-gradient-to-r from-red-200 via-yellow-200 to-green-200">
+    <div className="flex flex-col md:flex-row h-screen from-red-200 via-yellow-200 to-green-200">
 
       {/* Image Section */}
       <div className="hidden md:flex md:w-8/12 h-screen relative">
@@ -92,7 +92,7 @@ const LoginComp = () => {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full justify-center items-center gap-2 rounded-xl bg-purple-600 px-4 py-3 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              className="flex w-full justify-center items-center gap-2 rounded-xl bg-purple-600 px-4 py-3 text-sm font-semibold text-white hover:bg-black-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
               {loading ? (
                 <svg

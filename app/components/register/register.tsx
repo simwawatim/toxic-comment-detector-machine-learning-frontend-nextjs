@@ -37,7 +37,7 @@ const RegisterComp = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-gradient-to-r from-purple-200 via-pink-200 to-yellow-200">
+    <div className="flex flex-col md:flex-row h-screen bg-white from-purple-200 via-pink-200 to-yellow-200">
 
       {/* Image Section */}
       <div className="hidden md:flex md:w-8/12 h-screen relative">

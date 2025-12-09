@@ -74,7 +74,7 @@ const SidebarComp = ({ isOpen, toggleSidebar }: SidebarProps) => {
             <li key={user.id}>
               <Link
                 href={`/home?user=${user.id}`}
-                className="flex items-center gap-3 px-4 py-2 rounded bg-gray-900 hover:bg-green-900 text-white transition-all"
+                className="flex items-center gap-3 px-4 py-2 rounded bg-gray-900 hover:bg-purple-600 text-white transition-all"
               >
                 <img
                   src={user.avatar}
@@ -97,7 +97,7 @@ const SidebarComp = ({ isOpen, toggleSidebar }: SidebarProps) => {
 
         <button
           onClick={() => localStorage.removeItem("token")}
-          className="w-full text-left text-white font-medium hover:bg-green-900 text-[15px] flex items-center gap-3 rounded px-4 py-2 transition-colors"
+          className="w-full text-left text-white bg-purple-600 font-medium hover:bg-black-900 text-[15px] flex items-center gap-3 rounded px-4 py-2 transition-colors"
         >
           <FaSignOutAlt />
           <span>Logout</span>
