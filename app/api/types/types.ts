@@ -68,3 +68,26 @@ export interface UserListResponse {
   data: UserListResponseData[];
 }
 
+export interface UserMessagesResponseData {
+  id: string;
+  sender: number;
+  receiver: number;
+  text: string;
+  toxic_tag: string;
+  created_at: string;
+  created_by: string;
+}
+export interface UserMessagesResponse {
+  status_code: string;
+  status: string;
+  message: string;
+  data: UserMessagesResponseData[];
+}
+
+export interface UserMessagesRequest {
+  receiver_id: number;
+}
+
+export interface getUserByIdT {
+  id: number;
+}

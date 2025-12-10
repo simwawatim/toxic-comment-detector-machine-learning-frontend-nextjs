@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { getUserByIdClient } from "@/app/api/client/client";
+import { BASE_URL, DEFAULT_AVATAR } from "@/app/api/base/base";
 
 const HomePageComp = () => {
   const searchParams = useSearchParams();
@@ -9,19 +11,28 @@ const HomePageComp = () => {
 
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
-  const users = [
-    { id: 1, name: "John Banda", username: "jbanda", avatar: "/default-profile.png" },
-    { id: 2, name: "Mary Zulu", username: "mzulu", avatar: "/default-profile.png" },
-    { id: 3, name: "Peter Mwape", username: "pmwape", avatar: "/default-profile.png" },
-  ];
-
   useEffect(() => {
-    if (selectedId) {
-      const found = users.find((u) => u.id === Number(selectedId));
-      setSelectedUser(found || null);
-    }
-  }, [selectedId]);
+  if (!selectedId) return;
 
+  const getUserProfile = async () => {
+    try {
+      const userId = Number(selectedId);
+      const response = await getUserByIdClient(userId);
+
+      const data = setSelectedUser(response.data);
+      console.log(data)
+
+    } catch (error) {
+      console.error("Failed to fetch user:", error);
+      setSelectedUser(null);
+    }
+  };
+
+  getUserProfile();
+}, [selectedId]);
+const profileUrl = selectedUser?.profile_picture
+    ? `${BASE_URL}${selectedUser.profile_picture}`
+    : DEFAULT_AVATAR;
   return (
     <div className="flex h-[90vh] mt-4 bg-black rounded-lg overflow-hidden shadow-lg">
 
@@ -33,11 +44,15 @@ const HomePageComp = () => {
           {selectedUser ? (
             <div className="flex items-center gap-3">
               <img
-                src={selectedUser.avatar}
+                src={profileUrl}
+                onError={(e) => {
+                  e.currentTarget.src = DEFAULT_AVATAR; 
+                }}
                 className="w-10 h-10 rounded-full border border-gray-300"
+                alt="Profile picture"
               />
               <div>
-                <h3 className="font-semibold">{selectedUser.name}</h3>
+                <h3 className="font-semibold">{selectedUser.email}</h3>
                 <p className="text-sm text-gray-400">@{selectedUser.username}</p>
               </div>
             </div>
