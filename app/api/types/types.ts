@@ -91,3 +91,24 @@ export interface UserMessagesRequest {
 export interface getUserByIdT {
   id: number;
 }
+
+
+export interface createMessageRequest {
+  receiver: number,
+  text: string;
+}
+export interface createMessageResponseData{
+  id: string;
+  sender: number;
+  receiver: number;
+  text: string;
+  toxic_tag: string;
+  created_at: string;
+}
+
+export interface createMessageResponse{
+  status_code: number;
+  status: string;
+  message: string;
+  data: createMessageResponseData;
+}

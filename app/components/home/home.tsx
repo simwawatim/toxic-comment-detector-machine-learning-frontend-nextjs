@@ -47,7 +47,6 @@ const HomePageComp = () => {
     getUserProfile();
   }, [selectedId]);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
