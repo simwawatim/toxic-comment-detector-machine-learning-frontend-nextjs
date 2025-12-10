@@ -1,7 +1,8 @@
 import axios from "axios";
 import {BASE_API_URL} from "../base/base";
 import { LoginResponse, LoginRequest, RegisterRequest, RegisterResponse, ProfilePictureResponse, UserListResponse, UserMessagesResponse, UserMessagesRequest, getUserByIdT, createMessageRequest, createMessageResponse, UpdateProfilePayload, UpdateProfileResponse } from "../types/types";
-
+import { getAccessToken } from "../../api/base/token";
+import router from "next/router";
 
 export const LoginClient = async (data: LoginRequest): Promise <LoginResponse> => {
     const response = await axios.post(
@@ -31,26 +32,36 @@ export const RegisterClient = async (data: RegisterRequest): Promise <RegisterRe
 
 
 export const createMessageClient = async (data: createMessageRequest): Promise<createMessageResponse> => {
-  const response = await axios.post(
-    `${BASE_API_URL}messages/send/`,
-    data,
-    {
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoyMDgwNjU5ODczLCJpYXQiOjE3NjUyOTk4NzMsImp0aSI6IjU0ZGRmZGI0MzcxNjRjYzc5ZDA0ZDQ0MWM5MTc2YmU5IiwidXNlcl9pZCI6IjcifQ.mFHFeLlJf_D9Llp0jkuX5wBeyiZMv4dZzqd5yambNxc`
-      }
+
+    const token = getAccessToken();
+        if (!token) {
+      router.push("/");
     }
-  );
+
+    const response = await axios.post(
+        `${BASE_API_URL}messages/send/`,
+        data,
+        {
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        }
+        }
+    );
 
   return response.data;
 };
 export const LoggedInUserProfile = async (): Promise <ProfilePictureResponse> => {
+    const token = getAccessToken();
+         if (!token) {
+      router.push("/");
+    }
     const response = await axios.get(
         `${BASE_API_URL}profile/me/`,
         {
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoyMDgwNjU5ODczLCJpYXQiOjE3NjUyOTk4NzMsImp0aSI6IjU0ZGRmZGI0MzcxNjRjYzc5ZDA0ZDQ0MWM5MTc2YmU5IiwidXNlcl9pZCI6IjcifQ.mFHFeLlJf_D9Llp0jkuX5wBeyiZMv4dZzqd5yambNxc`
+               Authorization: `Bearer ${token}`,
             }
         },
     )
@@ -59,12 +70,16 @@ export const LoggedInUserProfile = async (): Promise <ProfilePictureResponse> =>
 }
 
 export const UserListClient = async (): Promise< UserListResponse> => {
+    const token = getAccessToken();
+        if (!token) {
+      router.push("/login");
+    }
     const response = await axios.get(
          `${BASE_API_URL}users/`,
         {
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoyMDgwNjU5ODczLCJpYXQiOjE3NjUyOTk4NzMsImp0aSI6IjU0ZGRmZGI0MzcxNjRjYzc5ZDA0ZDQ0MWM5MTc2YmU5IiwidXNlcl9pZCI6IjcifQ.mFHFeLlJf_D9Llp0jkuX5wBeyiZMv4dZzqd5yambNxc`
+                Authorization: `Bearer ${token}`,
             }
         },
 
@@ -73,12 +88,16 @@ export const UserListClient = async (): Promise< UserListResponse> => {
 }
 
 export const UserMessageList = async (id: number): Promise<UserMessagesResponse> => {
+    const token = getAccessToken();
+        if (!token) {
+      router.push("/");
+    }
     const response = await axios.get(
         `${BASE_API_URL}messages/?receiver_id=${id}`,
         {
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoyMDgwNjU5ODczLCJpYXQiOjE3NjUyOTk4NzMsImp0aSI6IjU0ZGRmZGI0MzcxNjRjYzc5ZDA0ZDQ0MWM5MTc2YmU5IiwidXNlcl9pZCI6IjcifQ.mFHFeLlJf_D9Llp0jkuX5wBeyiZMv4dZzqd5yambNxc`
+                Authorization: `Bearer ${token}`,
             }
         }
     );
@@ -87,12 +106,16 @@ export const UserMessageList = async (id: number): Promise<UserMessagesResponse>
 }
 
 export const getUserByIdClient = async (id: number): Promise<ProfilePictureResponse> => {
+    const token = getAccessToken();
+        if (!token) {
+      router.push("/");
+    }
     const response = await axios.get(
          `${BASE_API_URL}profile/${id}/`,
         {
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoyMDgwNjU5ODczLCJpYXQiOjE3NjUyOTk4NzMsImp0aSI6IjU0ZGRmZGI0MzcxNjRjYzc5ZDA0ZDQ0MWM5MTc2YmU5IiwidXNlcl9pZCI6IjcifQ.mFHFeLlJf_D9Llp0jkuX5wBeyiZMv4dZzqd5yambNxc`
+                Authorization: `Bearer ${token}`,
             }
         },
     )
@@ -103,7 +126,8 @@ export const getUserByIdClient = async (id: number): Promise<ProfilePictureRespo
 export async function updateUserProfileClient(
   payload: UpdateProfilePayload
 ): Promise<UpdateProfileResponse> {
-  const token = localStorage.getItem("access_token");
+  const token = getAccessToken();
+    if (!token) throw new Error("No token found");
 
   const formData = new FormData();
   if (payload.username) formData.append("username", payload.username);
@@ -119,7 +143,7 @@ export async function updateUserProfileClient(
   const res = await fetch(`${BASE_API_URL}users/update/`, {
     method: "PUT",
     headers: {
-      Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoyMDgwNjU5ODczLCJpYXQiOjE3NjUyOTk4NzMsImp0aSI6IjU0ZGRmZGI0MzcxNjRjYzc5ZDA0ZDQ0MWM5MTc2YmU5IiwidXNlcl9pZCI6IjcifQ.mFHFeLlJf_D9Llp0jkuX5wBeyiZMv4dZzqd5yambNxc`,
+      Authorization: `Bearer ${token}`,
     },
     body: formData,
   });

@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, JSX } from "react";
 import { useSearchParams } from "next/navigation";
 import { createMessageClient, getUserByIdClient, UserMessageList } from "@/app/api/client/client";
 import { BASE_URL, DEFAULT_AVATAR } from "@/app/api/base/base";
 import { createMessageResponse } from "@/app/api/types/types";
+import { decodeAccessToken } from "@/app/api/base/decode_token";
+import { CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/solid";
+
 
 interface Message {
   id: string;
@@ -23,59 +26,38 @@ const HomePageComp = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
 
-  const currentUserId = 7; 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Get userId from access token
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      const decoded = decodeAccessToken(token);
+      setUserId(Number(decoded));
+    }
+  }, []);
+
+  // Fetch messages for selected user
   const fetchMessages = async (userId: number) => {
     try {
       const messageResponse = await UserMessageList(userId);
 
+      // Sort messages by created_at ascending
       const sortedMessages = (messageResponse.data || []).sort(
         (a: Message, b: Message) =>
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
 
       setMessages(sortedMessages);
-
     } catch (error) {
       console.error("Failed to fetch messages:", error);
       setMessages([]);
     }
   };
 
-  const handleCreateMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !selectedUser) return;
-
-    setLoading(true);
-
-    try {
-      const receiver = Number(selectedId);
-      const createMsgResponse: createMessageResponse = await createMessageClient({
-        receiver,
-        text: newMessage
-      });
-      const data = createMsgResponse.data;
-
-      const newMsg: Message = {
-        id: data.id,
-        sender: data.sender,
-        receiver: data.receiver,
-        text: data.text,
-        toxic_tag: data.toxic_tag,
-        created_at: data.created_at
-      };
-
-      setMessages(prev => [...prev, newMsg]);
-      setNewMessage("");
-
-    } catch (error) {
-      console.error("Failed to send message:", error);
-    } finally {
-      setLoading(false);
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  };
+  // Fetch selected user profile and messages
   useEffect(() => {
     if (!selectedId) return;
 
@@ -86,7 +68,6 @@ const HomePageComp = () => {
 
         setSelectedUser(response.data);
         await fetchMessages(userId);
-
       } catch (error) {
         console.error("Failed to fetch user or messages:", error);
         setSelectedUser(null);
@@ -97,24 +78,60 @@ const HomePageComp = () => {
     getUserProfile();
   }, [selectedId]);
 
+  // Scroll to bottom whenever messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Send new message
+  const handleCreateMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedUser || !userId) return;
+
+    setLoading(true);
+
+    try {
+      const receiver = Number(selectedId);
+      const createMsgResponse: createMessageResponse = await createMessageClient({
+        receiver,
+        text: newMessage,
+      });
+
+      const data = createMsgResponse.data;
+
+      const newMsg: Message = {
+        id: data.id,
+        sender: data.sender,
+        receiver: data.receiver,
+        text: data.text,
+        toxic_tag: data.toxic_tag,
+        created_at: data.created_at,
+      };
+
+      setMessages((prev) => [...prev, newMsg]);
+      setNewMessage("");
+    } catch (error) {
+      console.error("Failed to send message:", error);
+    } finally {
+      setLoading(false);
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   const profileUrl = selectedUser?.profile_picture
     ? `${BASE_URL}${selectedUser.profile_picture}`
     : DEFAULT_AVATAR;
 
-  const tagColors: Record<string, string> = {
-    toxic: "bg-red-500",
-    offensive: "bg-yellow-500",
-    none: "bg-gray-400",
-  };
+  const tagIcons: Record<string, JSX.Element> = {
+  none: <CheckCircleIcon className="w-4 h-4 text-green-500" />,
+  toxic: <XCircleIcon className="w-4 h-4 text-red-500" />,
+  offensive: <ExclamationTriangleIcon className="w-4 h-4 text-yellow-500" />,
+};
+
 
   return (
     <div className="flex h-[90vh] mt-4 bg-black rounded-lg overflow-hidden shadow-lg">
       <div className="flex-1 flex flex-col bg-white">
-
         {/* HEADER */}
         <div className="p-4 border-b bg-black text-white">
           {selectedUser ? (
@@ -142,7 +159,8 @@ const HomePageComp = () => {
           ) : (
             <>
               {messages.map((msg) => {
-                const isSent = msg.sender === currentUserId;
+                if (!userId) return null;
+                const isSent = msg.sender === userId;
 
                 return (
                   <div
@@ -157,11 +175,10 @@ const HomePageComp = () => {
                       {msg.text}
                     </p>
 
-                    <span
-                      className={`mt-1 text-xs text-white px-2 py-0.5 rounded ${tagColors[msg.toxic_tag || "none"]}`}
-                    >
-                      {msg.toxic_tag}
+                   <span className="mt-1">
+                      {tagIcons[msg.toxic_tag || "none"]}
                     </span>
+
 
                     <span className="mt-0.5 text-xs text-gray-500">
                       {new Date(msg.created_at).toLocaleString()}
@@ -175,10 +192,9 @@ const HomePageComp = () => {
         </div>
 
         {/* INPUT BOX */}
-        {selectedUser && (
+        {selectedUser && userId && (
           <form onSubmit={handleCreateMessage} className="space-y-4">
             <div className="p-4 border-t bg-white flex gap-3 items-center">
-
               <input
                 type="text"
                 value={newMessage}
@@ -192,7 +208,6 @@ const HomePageComp = () => {
                   focus:border-green-500 hover:border-gray-400
                 "
               />
-
               <button
                 type="submit"
                 disabled={loading}
@@ -209,7 +224,6 @@ const HomePageComp = () => {
             </div>
           </form>
         )}
-
       </div>
     </div>
   );

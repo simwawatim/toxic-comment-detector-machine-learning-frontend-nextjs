@@ -169,12 +169,32 @@ const SidebarComp = ({ isOpen, toggleSidebar }: SidebarProps) => {
   
 
         <button
-          onClick={() => localStorage.removeItem("token")}
-          className="w-full text-left text-white bg-purple-600 font-medium hover:bg-black-900 text-[15px] flex items-center gap-3 rounded px-4 py-2 transition-colors"
-        >
-          <FaSignOutAlt />
-          <span>Logout</span>
-        </button>
+            onClick={() => {
+              Swal.fire({
+                title: "Logout?",
+                text: "Are you sure you want to logout?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Yes, Logout",
+              }).then((result) => {
+                if (result.isConfirmed) {
+                  localStorage.removeItem("access_token");
+                  localStorage.removeItem("token"); 
+
+                  Swal.fire("Logged Out!", "You have been logged out successfully.", "success").then(() => {
+                    window.location.href = "/";
+                  });
+                }
+              });
+            }}
+            className="w-full text-left text-white bg-purple-600 font-medium hover:bg-purple-700 text-[15px] flex items-center gap-3 rounded px-4 py-2 transition-colors"
+          >
+            <FaSignOutAlt />
+            <span>Logout</span>
+          </button>
+
       </nav>
 
       {isOpen && (
