@@ -4,86 +4,112 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import HeaderComp from "../../components/base/header/header";
 import SidebarComp from "../../components/base/sidenav/sidenav";
-
-interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
-  username: string;
-  email: string;
-  avatar?: string;
-  password?: string;
-}
-
-// Sample users
-const users: User[] = [
-  { id: 1, firstName: "John", lastName: "Banda", username: "jbanda", email: "john@example.com", avatar: "/default-profile.png" },
-  { id: 2, firstName: "Mary", lastName: "Zulu", username: "mzulu", email: "mary@example.com", avatar: "/default-profile.png" },
-  { id: 3, firstName: "Peter", lastName: "Mwape", username: "pmwape", email: "peter@example.com", avatar: "/default-profile.png" },
-];
+import { LoggedInUserProfile, updateUserProfileClient } from "@/app/api/client/client";
+import { BASE_URL } from "@/app/api/base/base";
+import Swal from "sweetalert2";
 
 const ProfilePage = () => {
   const params = useParams();
   const userId = Number(params.id);
 
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [avatar, setAvatar] = useState<string | undefined>("");
+  const [avatar, setAvatar] = useState<string | undefined>(undefined);
   const [password, setPassword] = useState("");
+  const [profileFile, setProfileFile] = useState<File | null>(null);
 
   const toggleSidebar = () => setIsOpen(!isOpen);
 
+  // -----------------------------
+  // Fetch profile from backend
+  // -----------------------------
   useEffect(() => {
-    const found = users.find(u => u.id === userId) || null;
-    if (found) {
-      setUser(found);
-      setFirstName(found.firstName);
-      setLastName(found.lastName);
-      setUsername(found.username);
-      setEmail(found.email);
-      setAvatar(found.avatar);
-    }
-  }, [userId]);
+    const fetchProfile = async () => {
+      try {
+        const profile = await LoggedInUserProfile();
+        const statusCode = profile.status_code;
 
+        if (Number(statusCode) === 401) {
+          Swal.fire({
+            title: "Session Expired",
+            text: "Your login session has expired. Please login again.",
+            icon: "warning",
+            confirmButtonText: "Login",
+          }).then(() => {
+            localStorage.removeItem("access_token");
+            window.location.href = "/login";
+          });
+          return;
+        }
+
+        const fullProfilePictureUrl = BASE_URL + profile.data.profile_picture;
+
+        setAvatar(fullProfilePictureUrl || "/default-profile.png");
+        setEmail(profile.data.email);
+        setUsername(profile.data.username);
+        // setFirstName(profile.data.first_name || "");
+        // setLastName(profile.data.last_name || "");
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  // -----------------------------
+  // Avatar preview + store file
+  // -----------------------------
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setAvatar(URL.createObjectURL(file));
+      setProfileFile(file);
+      setAvatar(URL.createObjectURL(file)); // preview
     }
   };
 
-  const handleSave = () => {
-    console.log({
-      firstName,
-      lastName,
-      username,
-      email,
-      avatar,
-      password: password ? password : "unchanged",
-    });
-    alert("Profile updated (mock)");
-  };
+  // -----------------------------
+  // SAVE PROFILE (Real API Save)
+  // -----------------------------
+  const handleSave = async () => {
+    try {
+      const res = await updateUserProfileClient({
+        username,
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        password: password || undefined,
+        profile_picture: profileFile,
+      });
 
-  if (!user) return <p className="text-center mt-20 text-gray-500">User not found</p>;
+      if (res.status_code === 200) {
+        Swal.fire("Success", "Profile updated successfully!", "success");
+      } else {
+        Swal.fire("Error", res.message || "Failed to update profile", "error");
+      }
+    } catch (error) {
+      console.error(error);
+      Swal.fire("Error", "Unexpected error occurred", "error");
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Header */}
+      {/* HEADER */}
       <HeaderComp isOpen={isOpen} toggleSidebar={toggleSidebar} />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
         <SidebarComp isOpen={isOpen} toggleSidebar={toggleSidebar} />
 
-        {/* Main content */}
         <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-gray-100 lg:ml-[250px]">
           <div className="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-black font-semibold mb-6 text-center">Edit Profile</h2>
+            <h2 className="text-black font-semibold mb-6 text-center">
+              Edit Profile
+            </h2>
 
             {/* Avatar */}
             <div className="flex flex-col items-center mb-6">
@@ -92,19 +118,15 @@ const ProfilePage = () => {
                 alt="Profile"
                 className="w-24 h-24 rounded-full border border-gray-300 mb-3 object-cover"
               />
-              <input type="file" accept="image/*" onChange={handleAvatarChange} />
-            </div>
 
-            {/* First & Last Name */}
-            <div className="flex gap-4 mb-4">
               <input
-                type="text"
-                placeholder="First Name"
-                className="flex-1 text-black border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-600"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
+                id="avatarInput"
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="mt-2 block w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 placeholder-gray-400 shadow-sm 
+                focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
               />
-              
             </div>
 
             {/* Username */}
@@ -112,7 +134,7 @@ const ProfilePage = () => {
               <input
                 type="text"
                 placeholder="Username"
-                className="w-full text-black border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-600"
+                className="mt-2 block w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
@@ -123,7 +145,7 @@ const ProfilePage = () => {
               <input
                 type="email"
                 placeholder="Email"
-                className="w-full text-black border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-600"
+                className="mt-2 block w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -134,17 +156,18 @@ const ProfilePage = () => {
               <input
                 type="password"
                 placeholder="New Password"
-                className="w-full text-black border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-600"
+                className="mt-2 block w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-              <p className="text-sm text-gray-400 mt-1">Leave blank to keep current password</p>
+              <p className="text-sm text-gray-400 mt-1">
+                Leave blank to keep current password
+              </p>
             </div>
 
-            {/* Save Button */}
             <button
               onClick={handleSave}
-              className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition"
+              className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition"
             >
               Save Changes
             </button>

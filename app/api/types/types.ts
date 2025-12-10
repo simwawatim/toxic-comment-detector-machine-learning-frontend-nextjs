@@ -113,3 +113,25 @@ export interface createMessageResponse {
   message: string;
   data: createMessageResponseData;
 }
+
+export interface UpdateProfilePayload {
+  username?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  password?: string;
+  profile_picture?: File | null;
+}
+
+export interface UpdateProfileResponse {
+  status_code: number;
+  status: string;
+  message: string;
+  data?: {
+    username: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    profile_picture: string;
+  };
+}
