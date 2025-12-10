@@ -58,17 +58,18 @@ export const UserListClient = async (): Promise< UserListResponse> => {
     return response.data
 }
 
-export const UserMessageList = async (id : UserMessagesRequest): Promise<UserMessagesResponse> => {
+export const UserMessageList = async (id: number): Promise<UserMessagesResponse> => {
     const response = await axios.get(
-         `${BASE_API_URL}messages/?receiver_id=${id}/`,
+        `${BASE_API_URL}messages/?receiver_id=${id}`,
         {
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoyMDgwNjU5ODczLCJpYXQiOjE3NjUyOTk4NzMsImp0aSI6IjU0ZGRmZGI0MzcxNjRjYzc5ZDA0ZDQ0MWM5MTc2YmU5IiwidXNlcl9pZCI6IjcifQ.mFHFeLlJf_D9Llp0jkuX5wBeyiZMv4dZzqd5yambNxc`
             }
-        },
-    )
-    return response.data
+        }
+    );
+    
+    return response.data;
 }
 
 export const getUserByIdClient = async (id: number): Promise<ProfilePictureResponse> => {
