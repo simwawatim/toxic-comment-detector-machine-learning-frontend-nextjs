@@ -94,10 +94,11 @@ export interface getUserByIdT {
 
 
 export interface createMessageRequest {
-  receiver: number,
+  receiver: number;
   text: string;
 }
-export interface createMessageResponseData{
+
+export interface createMessageResponseData {
   id: string;
   sender: number;
   receiver: number;
@@ -106,7 +107,7 @@ export interface createMessageResponseData{
   created_at: string;
 }
 
-export interface createMessageResponse{
+export interface createMessageResponse {
   status_code: number;
   status: string;
   message: string;

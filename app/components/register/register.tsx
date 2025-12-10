@@ -48,7 +48,6 @@ const RegisterComp = () => {
         last_name,
       });
 
-      // FIXED: Compare as NUMBER
       if (Number(data.status_code) !== 201) {
         Swal.fire({
           title: "Registration Failed",
