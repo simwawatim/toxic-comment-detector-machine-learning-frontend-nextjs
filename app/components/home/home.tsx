@@ -2,11 +2,19 @@
 
 import React, { useEffect, useState, useRef, JSX } from "react";
 import { useSearchParams } from "next/navigation";
-import { createMessageClient, getUserByIdClient, UserMessageList } from "@/app/api/client/client";
+import {
+  createMessageClient,
+  getUserByIdClient,
+  UserMessageList,
+} from "@/app/api/client/client";
 import { BASE_URL, DEFAULT_AVATAR } from "@/app/api/base/base";
 import { createMessageResponse } from "@/app/api/types/types";
 import { decodeAccessToken } from "@/app/api/base/decode_token";
-import { CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/solid";
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/solid";
 
 interface Message {
   id: string;
@@ -27,9 +35,13 @@ const HomePageComp = () => {
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
 
+  // 🔐 Track revealed toxic messages
+  const [revealedMessages, setRevealedMessages] = useState<Set<string>>(
+    new Set()
+  );
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Get userId from access token
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     if (token) {
@@ -38,14 +50,14 @@ const HomePageComp = () => {
     }
   }, []);
 
-  // Fetch messages for selected user
   const fetchMessages = async (userId: number) => {
     try {
       const messageResponse = await UserMessageList(userId);
 
       const sortedMessages = (messageResponse.data || []).sort(
         (a: Message, b: Message) =>
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          new Date(a.created_at).getTime() -
+          new Date(b.created_at).getTime()
       );
 
       setMessages(sortedMessages);
@@ -55,17 +67,16 @@ const HomePageComp = () => {
     }
   };
 
-  // Fetch selected user profile and messages
   useEffect(() => {
     if (!selectedId) return;
 
     const getUserProfile = async () => {
       try {
-        const userId = Number(selectedId);
-        const response = await getUserByIdClient(userId);
+        const uid = Number(selectedId);
+        const response = await getUserByIdClient(uid);
 
         setSelectedUser(response.data);
-        await fetchMessages(userId);
+        await fetchMessages(uid);
       } catch (error) {
         console.error("Failed to fetch user or messages:", error);
         setSelectedUser(null);
@@ -76,12 +87,10 @@ const HomePageComp = () => {
     getUserProfile();
   }, [selectedId]);
 
-  // Scroll to bottom whenever messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Send new message
   const handleCreateMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedUser || !userId) return;
@@ -90,10 +99,11 @@ const HomePageComp = () => {
 
     try {
       const receiver = Number(selectedId);
-      const createMsgResponse: createMessageResponse = await createMessageClient({
-        receiver,
-        text: newMessage,
-      });
+      const createMsgResponse: createMessageResponse =
+        await createMessageClient({
+          receiver,
+          text: newMessage,
+        });
 
       const data = createMsgResponse.data;
 
@@ -116,6 +126,10 @@ const HomePageComp = () => {
     }
   };
 
+  const revealMessage = (id: string) => {
+    setRevealedMessages((prev) => new Set(prev).add(id));
+  };
+
   const profileUrl = selectedUser?.profile_picture
     ? `${BASE_URL}${selectedUser.profile_picture}`
     : DEFAULT_AVATAR;
@@ -123,7 +137,9 @@ const HomePageComp = () => {
   const tagIcons: Record<string, JSX.Element> = {
     none: <CheckCircleIcon className="w-4 h-4 text-green-500" />,
     toxic: <XCircleIcon className="w-4 h-4 text-red-500" />,
-    offensive: <ExclamationTriangleIcon className="w-4 h-4 text-yellow-500" />,
+    offensive: (
+      <ExclamationTriangleIcon className="w-4 h-4 text-yellow-500" />
+    ),
   };
 
   return (
@@ -136,11 +152,13 @@ const HomePageComp = () => {
               src={profileUrl}
               onError={(e) => (e.currentTarget.src = DEFAULT_AVATAR)}
               className="w-10 h-10 rounded-full border border-gray-300"
-              alt="Profile picture"
+              alt="Profile"
             />
             <div>
               <h3 className="font-semibold">{selectedUser.email}</h3>
-              <p className="text-sm text-gray-400">@{selectedUser.username}</p>
+              <p className="text-sm text-gray-400">
+                @{selectedUser.username}
+              </p>
             </div>
           </div>
         ) : (
@@ -149,29 +167,58 @@ const HomePageComp = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-2 bg-gray-100">
+      <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-3 bg-gray-100">
         {!selectedUser ? (
-          <p className="text-center mt-20 text-gray-400">No user selected</p>
+          <p className="text-center mt-20 text-gray-400">
+            No user selected
+          </p>
         ) : (
           <>
             {messages.map((msg) => {
               if (!userId) return null;
+
               const isSent = msg.sender === userId;
+              const isReceiver = msg.receiver === userId;
+              const isToxic =
+                msg.toxic_tag === "toxic" ||
+                msg.toxic_tag === "offensive";
+              const isRevealed = revealedMessages.has(msg.id);
 
               return (
                 <div
                   key={msg.id}
-                  className={`flex flex-col ${isSent ? "items-end" : "items-start"}`}
+                  className={`flex flex-col ${
+                    isSent ? "items-end" : "items-start"
+                  }`}
                 >
-                  <p
-                    className={`inline-block px-4 py-2 rounded-lg text-white ${
-                      isSent ? "bg-green-600" : "bg-gray-800"
-                    }`}
-                  >
-                    {msg.text}
-                  </p>
+                  {isToxic && isReceiver && !isRevealed ? (
+                    <div className="flex items-center gap-2 bg-red-100 border border-red-300 px-4 py-2 rounded-lg">
+                      <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
+                      <span className="text-sm text-red-700 font-medium">
+                        Toxic message hidden
+                      </span>
+                      <button
+                        onClick={() => revealMessage(msg.id)}
+                        className="text-xs text-blue-600 underline hover:text-blue-800"
+                      >
+                        View
+                      </button>
+                    </div>
+                  ) : (
+                    <p
+                      className={`inline-block px-4 py-2 rounded-lg text-white ${
+                        isSent
+                          ? "bg-green-600"
+                          : "bg-gray-800"
+                      }`}
+                    >
+                      {msg.text}
+                    </p>
+                  )}
 
-                  <span className="mt-1">{tagIcons[msg.toxic_tag || "none"]}</span>
+                  <span className="mt-1">
+                    {tagIcons[msg.toxic_tag || "none"]}
+                  </span>
 
                   <span className="mt-0.5 text-xs text-gray-500">
                     {new Date(msg.created_at).toLocaleString()}
@@ -184,9 +231,12 @@ const HomePageComp = () => {
         )}
       </div>
 
-      {/* Input box */}
+      {/* Input */}
       {selectedUser && userId && (
-        <form onSubmit={handleCreateMessage} className="p-4 border-t bg-white flex gap-3">
+        <form
+          onSubmit={handleCreateMessage}
+          className="p-4 border-t bg-white flex gap-3"
+        >
           <input
             type="text"
             value={newMessage}
@@ -197,7 +247,7 @@ const HomePageComp = () => {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-2xl bg-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-md hover:bg-purple-700 focus:ring-2 focus:ring-purple-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-2xl bg-purple-600 px-6 py-3 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-50"
           >
             {loading ? "Sending..." : "Send"}
           </button>
